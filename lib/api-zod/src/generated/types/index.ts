@@ -10,4 +10,5 @@ export * from './downloaderError';
 export * from './downloaderStatus';
 export * from './healthStatus';
 export * from './tikTokDownloadInput';
+export * from './tikTokDownloadInputQuality';
 export * from './tikTokDownloadResult';

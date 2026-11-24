@@ -63,10 +63,14 @@ router.post("/download", async (req, res): Promise<void> => {
   }
 
   try {
+    const quality = parsed.data.quality ?? "2k";
     const apiResponse = await fetch(TIKWM_API_URL, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: parsed.data.url, hd: 1 }),
+      body: JSON.stringify({
+        url: parsed.data.url,
+        hd: quality === "standard" ? 0 : 1,
+      }),
       signal: AbortSignal.timeout(30_000),
     });
 
@@ -93,11 +97,15 @@ router.post("/download", async (req, res): Promise<void> => {
     }
 
     const author = asRecord(data.author);
+    const videoUrl =
+      quality === "standard"
+        ? asString(data.play) || asString(data.hdplay)
+        : asString(data.hdplay) || asString(data.play);
     const result = DownloadTikTokVideoResponse.parse({
       success: true,
       title: asString(data.title) || "TikTok Video",
       cover: asString(data.cover),
-      play: asString(data.hdplay) || asString(data.play),
+      play: videoUrl,
       music: asString(data.music),
       author: asString(author?.nickname) || "TikTok",
     });

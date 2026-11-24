@@ -39,6 +39,7 @@ function getAuthorHandle(author: TikTokDownloadResult['author']) {
 
 export default function Home() {
   const [url, setUrl] = useState('');
+  const [quality, setQuality] = useState<'2k' | 'standard'>('2k');
   const [fieldError, setFieldError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [result, setResult] = useState<TikTokDownloadResult | null>(null);
@@ -80,7 +81,7 @@ export default function Home() {
     }
 
     downloadVideo.mutate(
-      { data: { url: trimmed } },
+      { data: { url: trimmed, quality } },
       {
         onSuccess: (response) => {
           const payload = response as unknown as TikTokDownloadResult | DownloaderError;
@@ -186,6 +187,19 @@ export default function Home() {
               </button>
             </div>
             {fieldError && <p className="form-error" id="url-error" role="alert" data-testid="error-url-validation">{fieldError}</p>}
+            <div className="quality-control">
+              <label htmlFor="video-quality">គុណភាពវីដេអូ MP4</label>
+              <select
+                id="video-quality"
+                value={quality}
+                onChange={(event) => setQuality(event.target.value as '2k' | 'standard')}
+                data-testid="select-video-quality"
+              >
+                <option value="2k">2K — គុណភាពខ្ពស់បំផុត (ប្រសិនបើមាន)</option>
+                <option value="standard">ស្តង់ដារ — ទាញយកលឿនជាង</option>
+              </select>
+              <p className="quality-note" id="quality-note">2K អាចអាស្រ័យលើគុណភាពដែល TikTok ផ្តល់ជូនសម្រាប់វីដេអូនីមួយៗ។</p>
+            </div>
             <button className="submit-button" type="submit" disabled={downloadVideo.isPending} data-testid="button-get-video">
               {downloadVideo.isPending ? (
                 <>កំពុងស្វែងរកវីដេអូ <span className="button-dots" aria-hidden="true">···</span></>

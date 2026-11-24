@@ -8,7 +8,14 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { url, quality } = req.body || {};
+        const { url, quality = "2k" } = req.body || {};
+
+        if (!['2k', 'standard'].includes(quality)) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid quality option"
+            });
+        }
 
         if (!url) {
             return res.status(400).json({
@@ -34,7 +41,7 @@ module.exports = async (req, res) => {
             "https://www.tikwm.com/api/",
             new URLSearchParams({
                 url: url,
-                hd: "1"
+                hd: quality === "standard" ? "0" : "1"
             }),
             {
                 headers: {
@@ -53,7 +60,7 @@ module.exports = async (req, res) => {
         }
 
         const videoUrl =
-            quality === "720p"
+            quality === "standard"
                 ? data.play || data.hdplay
                 : data.hdplay || data.play;
 
@@ -65,8 +72,10 @@ module.exports = async (req, res) => {
             success: true,
             title: data.title || "TikTok Video",
             cover: data.cover || "",
+            play: videoUrl,
+            music: data.music || "",
             author: data.author?.nickname || "Unknown",
-            quality: quality || "1080p",
+            quality,
             downloadUrl: videoUrl
         });
 
