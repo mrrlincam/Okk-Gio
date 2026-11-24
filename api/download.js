@@ -1,14 +1,19 @@
 const axios = require("axios");
+const { pipeline } = require("node:stream/promises");
 
 module.exports = async (req, res) => {
-    if (req.method !== "POST") {
+    if (req.method !== "POST" && req.method !== "GET") {
         return res.status(405).json({
             error: "Method not allowed"
         });
     }
 
+    const isFileDownload = req.method === "GET";
+
     try {
-        const { url, quality = "2k" } = req.body || {};
+        const input = isFileDownload ? req.query || {} : req.body || {};
+        const url = typeof input.url === "string" ? input.url : "";
+        const quality = typeof input.quality === "string" ? input.quality : "2k";
 
         if (!['2k', 'standard'].includes(quality)) {
             return res.status(400).json({
@@ -62,10 +67,34 @@ module.exports = async (req, res) => {
         const videoUrl =
             quality === "standard"
                 ? data.play || data.hdplay
-                : data.hdplay || data.play;
+                : data.hdplay;
 
         if (!videoUrl) {
-            throw new Error("Video unavailable");
+            return res.status(422).json({
+                success: false,
+                error: "This video has no HD/2K source. Choose standard quality instead."
+            });
+        }
+
+        if (isFileDownload) {
+            const videoResponse = await axios.get(videoUrl, {
+                responseType: "stream",
+                timeout: 120000,
+                maxRedirects: 3,
+                maxContentLength: 100 * 1024 * 1024,
+                headers: { "User-Agent": "Mozilla/5.0" }
+            });
+
+            res.status(200);
+            res.setHeader("Content-Type", "video/mp4");
+            res.setHeader("Content-Disposition", 'attachment; filename="zhea-gio-tiktok.mp4"');
+            res.setHeader("Cache-Control", "no-store");
+            if (videoResponse.headers["content-length"]) {
+                res.setHeader("Content-Length", videoResponse.headers["content-length"]);
+            }
+
+            await pipeline(videoResponse.data, res);
+            return;
         }
 
         res.status(200).json({
@@ -81,6 +110,11 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error(error.message);
+
+        if (res.headersSent) {
+            res.destroy();
+            return;
+        }
 
         res.status(500).json({
             error: "Unable to process video"

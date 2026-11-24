@@ -9,6 +9,7 @@ type TikTokDownloadResult = {
   play: string;
   music: string;
   author: string | { nickname?: string; unique_id?: string; username?: string };
+  fileDownloadUrl: string;
 };
 
 type DownloaderError = {
@@ -89,7 +90,10 @@ export default function Home() {
             setRequestError((payload as DownloaderError).error || 'មិនអាចទាញយកវីដេអូនេះបានទេ។ សូមពិនិត្យតំណ ហើយសាកល្បងម្ដងទៀត។');
             return;
           }
-          setResult(payload as TikTokDownloadResult);
+          setResult({
+            ...(payload as TikTokDownloadResult),
+            fileDownloadUrl: `/api/download?url=${encodeURIComponent(trimmed)}&quality=${quality}`,
+          });
         },
         onError: (error) => {
           const data = error && typeof error === 'object' && 'data' in error
@@ -198,7 +202,7 @@ export default function Home() {
                 <option value="2k">2K — គុណភាពខ្ពស់បំផុត (ប្រសិនបើមាន)</option>
                 <option value="standard">ស្តង់ដារ — ទាញយកលឿនជាង</option>
               </select>
-              <p className="quality-note" id="quality-note">2K អាចអាស្រ័យលើគុណភាពដែល TikTok ផ្តល់ជូនសម្រាប់វីដេអូនីមួយៗ។</p>
+              <p className="quality-note" id="quality-note">ជម្រើស 2K ប្រើតំណ HD ប្រសិនបើមាន។ បើប្រភពមិនមាន HD សូមជ្រើសគុណភាពស្តង់ដារ។</p>
             </div>
             <button className="submit-button" type="submit" disabled={downloadVideo.isPending} data-testid="button-get-video">
               {downloadVideo.isPending ? (
@@ -226,7 +230,7 @@ export default function Home() {
           <section className="error-card" role="alert" data-testid="error-download">
             <AlertCircle size={19} />
             <div>
-              <strong>រកមិនឃើញវីដេអូ</strong>
+              <strong>មិនអាចទាញយកគុណភាពដែលបានជ្រើសបានទេ</strong>
               <p>{requestError}</p>
             </div>
           </section>
@@ -251,7 +255,7 @@ export default function Home() {
               <div className="result-divider" />
               <div className="result-actions">
                 {result.play ? (
-                  <a className="action-link primary-action" href={result.play} download target="_blank" rel="noreferrer" data-testid="link-download-video">
+                  <a className="action-link primary-action" href={result.fileDownloadUrl} download="zhea-gio-tiktok.mp4" data-testid="link-download-video">
                     <ArrowDownToLine size={15} /> ទាញយកវីដេអូ
                   </a>
                 ) : (
