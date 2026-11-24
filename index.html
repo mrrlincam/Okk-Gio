@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZHEA GIO Downloader</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ padding:20px;
+ background:#080d17;
+ color:white;
+ font-family:Arial,sans-serif
+}
+
+.container{
+ max-width:520px;
+ margin:30px auto
+}
+
+.logo{
+ text-align:center;
+ color:#00e5a0;
+ font-size:36px;
+ font-weight:bold;
+ letter-spacing:3px
+}
+
+.subtitle{
+ text-align:center;
+ color:#8994a7;
+ margin:12px 0 30px
+}
+
+.card{
+ background:#111c2d;
+ border:1px solid #26364b;
+ padding:20px;
+ border-radius:18px;
+ margin-bottom:20px
+}
+
+input,select{
+ width:100%;
+ padding:15px;
+ margin-top:12px;
+ background:#080e18;
+ color:white;
+ border:1px solid #34465e;
+ border-radius:10px;
+ font-size:15px
+}
+
+button{
+ width:100%;
+ padding:15px;
+ margin-top:15px;
+ background:#00e5a0;
+ color:#00180e;
+ border:0;
+ border-radius:10px;
+ font-size:16px;
+ font-weight:bold
+}
+
+.secondary{
+ background:#26364b;
+ color:white
+}
+
+#status{
+ text-align:center;
+ color:#00e5a0;
+ margin-top:15px
+}
+
+#result{
+ display:none;
+ margin-top:20px
+}
+
+.cover{
+ width:100%;
+ border-radius:12px
+}
+
+.info{
+ color:#aab8c9;
+ font-size:14px;
+ margin-top:10px
+}
+
+.item{
+ padding:15px;
+ background:#080e18;
+ border-radius:10px;
+ margin-top:12px;
+ overflow-wrap:anywhere
+}
+
+.item a{
+ display:block;
+ padding:12px;
+ margin-top:10px;
+ background:#00e5a0;
+ color:#00180e;
+ text-align:center;
+ text-decoration:none;
+ border-radius:8px;
+ font-weight:bold
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="logo">ZHEA GIO</div>
+
+<div class="subtitle">
+TIKTOK VIDEO DOWNLOADER
+</div>
+
+<div class="card">
+
+<h2>Download Video</h2>
+
+<input
+id="videoUrl"
+type="url"
+placeholder="Paste TikTok link here"
+>
+
+<select id="quality">
+<option value="720p">720p HD</option>
+<option value="1080p">1080p Full HD</option>
+<option value="1280p">1280p</option>
+<option value="2k">2K QHD</option>
+<option value="4k">4K Ultra HD</option>
+</select>
+
+<button id="searchBtn" onclick="getVideo()">
+GET VIDEO
+</button>
+
+<div id="status"></div>
+
+<div id="result">
+
+<img id="cover" class="cover">
+
+<h3 id="title"></h3>
+
+<div id="author" class="info"></div>
+
+<button onclick="downloadVideo()">
+DOWNLOAD VIDEO
+</button>
+
+<button class="secondary" onclick="saveToFiles()">
+SAVE FROM SAFARI
+</button>
+
+</div>
+</div>
+
+<div class="card">
+
+<h2>📥 Download Center</h2>
+
+<div id="downloadList">
+No downloads yet.
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+let currentVideo = null;
+
+async function getVideo(){
+
+ const url =
+ document.getElementById("videoUrl").value.trim();
+
+ const quality =
+ document.getElementById("quality").value;
+
+ const status =
+ document.getElementById("status");
+
+ const button =
+ document.getElementById("searchBtn");
+
+ if(!url){
+  alert("Please enter TikTok link");
+  return;
+ }
+
+ button.disabled = true;
+ status.textContent = "Processing video...";
+
+ try{
+
+  const response = await fetch("/api/download",{
+   method:"POST",
+   headers:{
+    "Content-Type":"application/json"
+   },
+   body:JSON.stringify({url,quality})
+  });
+
+  const data = await response.json();
+
+  if(!response.ok){
+   throw new Error(data.error || "Download failed");
+  }
+
+  currentVideo = data;
+
+  document.getElementById("cover").src =
+   data.cover || "";
+
+  document.getElementById("title").textContent =
+   data.title || "TikTok Video";
+
+  document.getElementById("author").textContent =
+   "Creator: " + (data.author || "Unknown");
+
+  document.getElementById("result").style.display =
+   "block";
+
+  status.textContent = "Video ready!";
+
+ }catch(error){
+
+  status.textContent = error.message;
+
+ }finally{
+
+  button.disabled = false;
+
+ }
+
+}
+
+function saveHistory(){
+
+ if(!currentVideo) return;
+
+ let history = JSON.parse(
+  localStorage.getItem("zheaGioHistory") || "[]"
+ );
+
+ history.unshift({
+  title:currentVideo.title,
+  quality:currentVideo.quality,
+  url:currentVideo.downloadUrl
+ });
+
+ history = history.slice(0,20);
+
+ localStorage.setItem(
+  "zheaGioHistory",
+  JSON.stringify(history)
+ );
+
+ showHistory();
+
+}
+
+function downloadVideo(){
+
+ if(!currentVideo) return;
+
+ saveHistory();
+
+ const link = document.createElement("a");
+
+ link.href = currentVideo.downloadUrl;
+ link.download = "ZHEA-GIO-VIDEO.mp4";
+
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+
+}
+
+function saveToFiles(){
+
+ if(!currentVideo) return;
+
+ saveHistory();
+
+ window.open(currentVideo.downloadUrl,"_blank");
+
+}
+
+function showHistory(){
+
+ const history = JSON.parse(
+  localStorage.getItem("zheaGioHistory") || "[]"
+ );
+
+ const list = document.getElementById("downloadList");
+
+ list.innerHTML = "";
+
+ if(history.length === 0){
+  list.textContent = "No downloads yet.";
+  return;
+ }
+
+ history.forEach(item=>{
+
+  const div = document.createElement("div");
+  div.className = "item";
+
+  const title = document.createElement("div");
+  title.textContent = item.title;
+
+  const quality = document.createElement("div");
+  quality.className = "info";
+  quality.textContent = item.quality;
+
+  const link = document.createElement("a");
+  link.href = item.url;
+  link.textContent = "DOWNLOAD AGAIN";
+
+  div.append(title,quality,link);
+  list.appendChild(div);
+
+ });
+
+}
+
+showHistory();
+
+</script>
+
+</body>
+</html>
