@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile",
-  "devCommand": "PORT=3001 pnpm --filter @workspace/zhea-gio-tiktok dev",
+  "devCommand": "pnpm --filter @workspace/zhea-gio-tiktok dev",
   "buildCommand": "pnpm --filter ./lib/... build && pnpm --filter ./artifacts/zhea-gio-tiktok build",
   "outputDirectory": "artifacts/zhea-gio-tiktok/dist",
   "rewrites": [
@@ -10,7 +10,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|@vite/|@react-refresh|@id/|@fs/|__vite|node_modules/|.*\\.[^/]+$).*)",
       "destination": "/index.html"
     }
   ]
