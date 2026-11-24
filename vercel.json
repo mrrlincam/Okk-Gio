@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter ./artifacts/zhea-gio-tiktok build",
-  "outputDirectory": "artifacts/zhea-gio-tiktok/dist/public",
+  "buildCommand": "pnpm --filter ./lib/... build && pnpm --filter ./artifacts/zhea-gio-tiktok build",
+  "outputDirectory": "artifacts/zhea-gio-tiktok/dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
