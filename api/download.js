@@ -62,10 +62,13 @@ module.exports = async (req, res) => {
         const videoUrl =
             quality === "standard"
                 ? data.play || data.hdplay
-                : data.hdplay || data.play;
+                : data.hdplay;
 
         if (!videoUrl) {
-            throw new Error("Video unavailable");
+            return res.status(422).json({
+                success: false,
+                error: "This video has no HD/2K source. Choose standard quality instead."
+            });
         }
 
         res.status(200).json({

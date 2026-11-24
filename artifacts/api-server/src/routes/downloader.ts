@@ -96,11 +96,20 @@ router.post("/download", async (req, res): Promise<void> => {
       return;
     }
 
-    const author = asRecord(data.author);
     const videoUrl =
       quality === "standard"
         ? asString(data.play) || asString(data.hdplay)
-        : asString(data.hdplay) || asString(data.play);
+        : asString(data.hdplay);
+    if (!videoUrl) {
+      res.status(422).json({
+        success: false,
+        error:
+          "ប្រភពមិនផ្តល់តំណ HD/2K សម្រាប់វីដេអូនេះទេ។ សូមជ្រើសគុណភាពស្តង់ដារ។",
+      });
+      return;
+    }
+
+    const author = asRecord(data.author);
     const result = DownloadTikTokVideoResponse.parse({
       success: true,
       title: asString(data.title) || "TikTok Video",
