@@ -687,7 +687,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   margin-top: 16px;
 }
 
-.quality-control label {
+.quality-label {
   display: block;
   margin-bottom: 7px;
   color: hsl(var(--foreground));
@@ -695,15 +695,45 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   font-weight: 700;
 }
 
-.quality-control select {
-  width: 100%;
-  min-height: 46px;
-  padding: 0 13px;
+.quality-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.quality-option {
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid hsl(var(--border));
   border-radius: 10px;
   background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: border-color .18s ease, background .18s ease, color .18s ease;
+}
+
+.quality-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.quality-option:has(input:checked),
+.quality-option.is-selected {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / .08);
+  color: hsl(var(--primary));
+}
+
+.quality-option:focus-within {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
 .quality-note {
