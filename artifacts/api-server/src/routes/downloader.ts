@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import {
   DownloadTikTokVideoBody,
   DownloadTikTokVideoResponse,
@@ -42,6 +44,101 @@ router.get("/status", (_req, res) => {
       message: "ZHEA GIO SERVER ONLINE",
     }),
   );
+});
+
+router.get("/download", async (req, res): Promise<void> => {
+  const url = typeof req.query.url === "string" ? req.query.url : "";
+  const requestedQuality = req.query.quality;
+  const quality =
+    requestedQuality === undefined || requestedQuality === "2k"
+      ? "2k"
+      : requestedQuality === "standard"
+        ? "standard"
+        : null;
+
+  if (!isTikTokUrl(url) || !quality) {
+    res.status(400).json({
+      success: false,
+      error: "សូមបញ្ចូលតំណ TikTok និងគុណភាពត្រឹមត្រូវ។",
+    });
+    return;
+  }
+
+  try {
+    const apiResponse = await fetch(TIKWM_API_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        url,
+        hd: quality === "standard" ? 0 : 1,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!apiResponse.ok) {
+      res.status(502).json({
+        success: false,
+        error: "Server Error ឬ API មិនដំណើរការ!",
+      });
+      return;
+    }
+
+    const payload = asRecord(await apiResponse.json());
+    const data = asRecord(payload?.data);
+    const videoUrl =
+      quality === "standard"
+        ? asString(data?.play) || asString(data?.hdplay)
+        : asString(data?.hdplay);
+
+    if (!videoUrl) {
+      res.status(422).json({
+        success: false,
+        error:
+          "ប្រភពមិនផ្តល់តំណ HD/2K សម្រាប់វីដេអូនេះទេ។ សូមជ្រើសគុណភាពស្តង់ដារ។",
+      });
+      return;
+    }
+
+    const videoResponse = await fetch(videoUrl, {
+      headers: { "user-agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(120_000),
+    });
+
+    if (!videoResponse.ok || !videoResponse.body) {
+      res.status(502).json({
+        success: false,
+        error: "មិនអាចទាញយកឯកសារវីដេអូពីប្រភពបានទេ។",
+      });
+      return;
+    }
+
+    const contentLength = videoResponse.headers.get("content-length");
+    res.status(200);
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="zhea-gio-tiktok.mp4"',
+    );
+    res.setHeader("Cache-Control", "no-store");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+
+    await pipeline(
+      Readable.fromWeb(
+        videoResponse.body as import("node:stream/web").ReadableStream,
+      ),
+      res,
+    );
+  } catch (error) {
+    req.log.error({ err: error }, "TikTok file download failed");
+    if (res.headersSent) {
+      res.destroy();
+      return;
+    }
+    res.status(502).json({
+      success: false,
+      error: "មិនអាចទាញយកឯកសារវីដេអូបានទេ។ សូមសាកល្បងម្ដងទៀត។",
+    });
+  }
 });
 
 router.post("/download", async (req, res): Promise<void> => {

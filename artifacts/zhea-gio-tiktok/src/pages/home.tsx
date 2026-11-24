@@ -9,6 +9,7 @@ type TikTokDownloadResult = {
   play: string;
   music: string;
   author: string | { nickname?: string; unique_id?: string; username?: string };
+  fileDownloadUrl: string;
 };
 
 type DownloaderError = {
@@ -89,7 +90,10 @@ export default function Home() {
             setRequestError((payload as DownloaderError).error || 'មិនអាចទាញយកវីដេអូនេះបានទេ។ សូមពិនិត្យតំណ ហើយសាកល្បងម្ដងទៀត។');
             return;
           }
-          setResult(payload as TikTokDownloadResult);
+          setResult({
+            ...(payload as TikTokDownloadResult),
+            fileDownloadUrl: `/api/download?url=${encodeURIComponent(trimmed)}&quality=${quality}`,
+          });
         },
         onError: (error) => {
           const data = error && typeof error === 'object' && 'data' in error
@@ -251,7 +255,7 @@ export default function Home() {
               <div className="result-divider" />
               <div className="result-actions">
                 {result.play ? (
-                  <a className="action-link primary-action" href={result.play} download target="_blank" rel="noreferrer" data-testid="link-download-video">
+                  <a className="action-link primary-action" href={result.fileDownloadUrl} download="zhea-gio-tiktok.mp4" data-testid="link-download-video">
                     <ArrowDownToLine size={15} /> ទាញយកវីដេអូ
                   </a>
                 ) : (
