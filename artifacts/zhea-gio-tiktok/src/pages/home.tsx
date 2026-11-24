@@ -40,7 +40,7 @@ function getAuthorHandle(author: TikTokDownloadResult['author']) {
 
 export default function Home() {
   const [url, setUrl] = useState('');
-  const [quality, setQuality] = useState<'2k' | 'standard'>('2k');
+  const [quality, setQuality] = useState<'2k' | '4k' | '8k' | 'standard'>('2k');
   const [fieldError, setFieldError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [result, setResult] = useState<TikTokDownloadResult | null>(null);
@@ -81,8 +81,9 @@ export default function Home() {
       return;
     }
 
+    const sourceQuality = quality === 'standard' ? 'standard' : '2k';
     downloadVideo.mutate(
-      { data: { url: trimmed, quality } },
+      { data: { url: trimmed, quality: sourceQuality } },
       {
         onSuccess: (response) => {
           const payload = response as unknown as TikTokDownloadResult | DownloaderError;
@@ -92,7 +93,7 @@ export default function Home() {
           }
           setResult({
             ...(payload as TikTokDownloadResult),
-            fileDownloadUrl: `/api/download?url=${encodeURIComponent(trimmed)}&quality=${quality}`,
+            fileDownloadUrl: `/api/download?url=${encodeURIComponent(trimmed)}&quality=${sourceQuality}`,
           });
         },
         onError: (error) => {
@@ -192,17 +193,29 @@ export default function Home() {
             </div>
             {fieldError && <p className="form-error" id="url-error" role="alert" data-testid="error-url-validation">{fieldError}</p>}
             <div className="quality-control">
-              <label htmlFor="video-quality">គុណភាពវីដេអូ MP4</label>
-              <select
-                id="video-quality"
-                value={quality}
-                onChange={(event) => setQuality(event.target.value as '2k' | 'standard')}
-                data-testid="select-video-quality"
-              >
-                <option value="2k">គុណភាពខ្ពស់បំផុតពីប្រភព — MP4</option>
-                <option value="standard">ស្តង់ដារ — ទាញយកលឿនជាង</option>
-              </select>
-              <p className="quality-note" id="quality-note">ទាញយកគុណភាពខ្ពស់បំផុតដែលវីដេអូដើមផ្តល់ជូន—កម្មវិធីមិនបង្កើន resolution ទេ។ 4K/8K/12K មានតែពេលប្រភពមានប៉ុណ្ណោះ។</p>
+              <span className="quality-label" id="video-quality-label">គុណភាពវីដេអូ MP4</span>
+              <div className="quality-options" role="radiogroup" aria-labelledby="video-quality-label" data-testid="quality-options">
+                {([
+                  { value: '2k', label: '2K' },
+                  { value: '4k', label: '4K' },
+                  { value: '8k', label: '8K' },
+                  { value: 'standard', label: 'ស្តង់ដារ' },
+                ] as const).map((option) => (
+                  <label className={`quality-option${quality === option.value ? ' is-selected' : ''}`} key={option.value}>
+                    <input
+                      type="radio"
+                      name="video-quality"
+                      value={option.value}
+                      checked={quality === option.value}
+                      onChange={() => setQuality(option.value)}
+                      aria-describedby="quality-note"
+                      data-testid={`quality-${option.value}`}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="quality-note" id="quality-note">ជ្រើសកម្រិតគោលដៅ 2K/4K/8K។ កម្រិតទាញយកពិតអាស្រ័យលើប្រភព ហើយអាចទាបជាងដែលបានជ្រើស។ កម្មវិធីមិនបង្កើន resolution ទេ។</p>
             </div>
             <button className="submit-button" type="submit" disabled={downloadVideo.isPending} data-testid="button-get-video">
               {downloadVideo.isPending ? (
