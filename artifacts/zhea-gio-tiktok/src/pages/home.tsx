@@ -17,13 +17,28 @@ type DownloaderError = {
   error: string;
 };
 
-function isTikTokUrl(value: string) {
+function normalizeTikTokUrl(value: string) {
+  const match = value.match(/https?:\/\/(?:www\.|m\.|vm\.|vt\.)?tiktok\.com\/[^\s"'<>]+/i);
+  if (!match) return '';
+
   try {
-    const url = new URL(value);
-    const hosts = ['tiktok.com', 'www.tiktok.com', 'm.tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com'];
-    return url.protocol === 'https:' && hosts.includes(url.hostname.toLowerCase());
+    const candidate = match[0].replace(/[),.;!?]+$/, '');
+    const url = new URL(candidate);
+    const hostname = url.hostname.toLowerCase();
+    const isTikTokHost = hostname === 'tiktok.com' || hostname.endsWith('.tiktok.com');
+    if (!isTikTokHost || !['http:', 'https:'].includes(url.protocol)) return '';
+
+    url.protocol = 'https:';
+    if (hostname === 'm.tiktok.com') url.hostname = 'www.tiktok.com';
+    if (/^(vm|vt)\.tiktok\.com$/.test(hostname) || url.pathname.startsWith('/t/')) {
+      return url.toString();
+    }
+
+    url.search = '';
+    url.hash = '';
+    return `${url.origin}${url.pathname}`;
   } catch {
-    return false;
+    return '';
   }
 }
 
@@ -83,14 +98,15 @@ export default function Home() {
       setFieldError('សូមបិទភ្ជាប់តំណ TikTok ជាមុនសិន។');
       return;
     }
-    if (!isTikTokUrl(trimmed)) {
+    const normalizedUrl = normalizeTikTokUrl(trimmed);
+    if (!normalizedUrl) {
       setFieldError('សូមបញ្ចូលតំណសាធារណៈពី TikTok ដែលត្រឹមត្រូវ។');
       return;
     }
 
     const sourceQuality = quality === 'standard' ? 'standard' : '2k';
     downloadVideo.mutate(
-      { data: { url: trimmed, quality: sourceQuality } },
+      { data: { url: normalizedUrl, quality: sourceQuality } },
       {
         onSuccess: (response) => {
           const payload = response as unknown as TikTokDownloadResult | DownloaderError;
@@ -100,7 +116,7 @@ export default function Home() {
           }
           setResult({
             ...(payload as TikTokDownloadResult),
-            sourceUrl: trimmed,
+            sourceUrl: normalizedUrl,
           });
         },
         onError: (error) => {
