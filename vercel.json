@@ -10,7 +10,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|@vite/|@react-refresh|@id/|@fs/|__vite|node_modules/|.*\\.[^/]+$).*)",
       "destination": "/index.html"
     }
   ]
