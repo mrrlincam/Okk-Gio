@@ -683,6 +683,36 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 
 .paste-button:hover { background: hsl(var(--secondary) / .74); }
 
+.quality-control {
+  margin-top: 16px;
+}
+
+.quality-control label {
+  display: block;
+  margin-bottom: 7px;
+  color: hsl(var(--foreground));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quality-control select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 13px;
+}
+
+.quality-note {
+  margin: 6px 0 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .form-error {
   margin: 9px 0 0;
   color: hsl(var(--destructive));

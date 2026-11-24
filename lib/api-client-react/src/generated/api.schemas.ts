@@ -14,9 +14,22 @@ export interface DownloaderStatus {
   message: string;
 }
 
+/**
+ * Request the highest available quality up to 2K, or standard quality.
+ */
+export type TikTokDownloadInputQuality = typeof TikTokDownloadInputQuality[keyof typeof TikTokDownloadInputQuality];
+
+
+export const TikTokDownloadInputQuality = {
+  '2k': '2k',
+  standard: 'standard',
+} as const;
+
 export interface TikTokDownloadInput {
   /** @minLength 1 */
   url: string;
+  /** Request the highest available quality up to 2K, or standard quality. */
+  quality?: TikTokDownloadInputQuality;
 }
 
 export interface TikTokDownloadResult {

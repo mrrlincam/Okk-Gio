@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TikTokDownloadInputQuality } from './tikTokDownloadInputQuality';
 
 export interface TikTokDownloadInput {
   /** @minLength 1 */
   url: string;
+  /** Request the highest available quality up to 2K, or standard quality. */
+  quality?: TikTokDownloadInputQuality;
 }

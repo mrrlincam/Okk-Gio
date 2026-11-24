@@ -98,6 +98,10 @@ components:
           type: string
           minLength: 1
           format: uri
+        quality:
+          type: string
+          enum: [2k, standard]
+          description: Request the highest available quality up to 2K, or standard quality.
       required: [url]
     TikTokDownloadResult:
       type: object

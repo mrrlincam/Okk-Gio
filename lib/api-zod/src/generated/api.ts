@@ -33,7 +33,8 @@ export const GetDownloaderStatusResponse = zod.object({
 
 
 export const DownloadTikTokVideoBody = zod.object({
-  "url": zod.url().min(1)
+  "url": zod.url().min(1),
+  "quality": zod.enum(['2k', 'standard']).optional().describe('Request the highest available quality up to 2K, or standard quality.')
 })
 
 export const DownloadTikTokVideoResponse = zod.object({
