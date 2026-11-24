@@ -94,7 +94,7 @@ router.get("/download", async (req, res): Promise<void> => {
       res.status(422).json({
         success: false,
         error:
-          "ប្រភពមិនផ្តល់តំណ HD/2K សម្រាប់វីដេអូនេះទេ។ សូមជ្រើសគុណភាពស្តង់ដារ។",
+          "វីដេអូនេះមិនមានស្ទ្រីមគុណភាពខ្ពស់បន្ថែមទេ។ សូមជ្រើសគុណភាពស្តង់ដារ។",
       });
       return;
     }
@@ -201,7 +201,7 @@ router.post("/download", async (req, res): Promise<void> => {
       res.status(422).json({
         success: false,
         error:
-          "ប្រភពមិនផ្តល់តំណ HD/2K សម្រាប់វីដេអូនេះទេ។ សូមជ្រើសគុណភាពស្តង់ដារ។",
+          "វីដេអូនេះមិនមានស្ទ្រីមគុណភាពខ្ពស់បន្ថែមទេ។ សូមជ្រើសគុណភាពស្តង់ដារ។",
       });
       return;
     }

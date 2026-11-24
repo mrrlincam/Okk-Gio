@@ -72,7 +72,7 @@ module.exports = async (req, res) => {
         if (!videoUrl) {
             return res.status(422).json({
                 success: false,
-                error: "This video has no HD/2K source. Choose standard quality instead."
+                error: "This video has no higher-quality source stream. Choose standard quality instead."
             });
         }
 

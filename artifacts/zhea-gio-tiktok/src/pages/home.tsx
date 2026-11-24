@@ -199,10 +199,10 @@ export default function Home() {
                 onChange={(event) => setQuality(event.target.value as '2k' | 'standard')}
                 data-testid="select-video-quality"
               >
-                <option value="2k">2K — គុណភាពខ្ពស់បំផុត (ប្រសិនបើមាន)</option>
+                <option value="2k">គុណភាពខ្ពស់បំផុតពីប្រភព — MP4</option>
                 <option value="standard">ស្តង់ដារ — ទាញយកលឿនជាង</option>
               </select>
-              <p className="quality-note" id="quality-note">ជម្រើស 2K ប្រើតំណ HD ប្រសិនបើមាន។ បើប្រភពមិនមាន HD សូមជ្រើសគុណភាពស្តង់ដារ។</p>
+              <p className="quality-note" id="quality-note">ទាញយកគុណភាពខ្ពស់បំផុតដែលវីដេអូដើមផ្តល់ជូន—កម្មវិធីមិនបង្កើន resolution ទេ។ 4K/8K/12K មានតែពេលប្រភពមានប៉ុណ្ណោះ។</p>
             </div>
             <button className="submit-button" type="submit" disabled={downloadVideo.isPending} data-testid="button-get-video">
               {downloadVideo.isPending ? (
