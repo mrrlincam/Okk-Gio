@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: downloader
+    description: TikTok downloader operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /status:
+    get:
+      operationId: getDownloaderStatus
+      tags: [downloader]
+      summary: Check downloader status
+      responses:
+        "200":
+          description: Downloader service is online
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloaderStatus"
+  /download:
+    post:
+      operationId: downloadTikTokVideo
+      tags: [downloader]
+      summary: Retrieve a TikTok video's download details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TikTokDownloadInput"
+      responses:
+        "200":
+          description: Video details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TikTokDownloadResult"
+        "400":
+          description: Invalid link or video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloaderError"
+        "502":
+          description: TikWM service returned an error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloaderError"
+        "504":
+          description: TikWM service timed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloaderError"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    DownloaderStatus:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
+    TikTokDownloadInput:
+      type: object
+      properties:
+        url:
+          type: string
+          minLength: 1
+          format: uri
+      required: [url]
+    TikTokDownloadResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        title:
+          type: string
+        cover:
+          type: string
+        play:
+          type: string
+        music:
+          type: string
+        author:
+          type: string
+      required: [success, title, cover, play, music, author]
+    DownloaderError:
+      type: object
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
+      required: [success, error]
+

@@ -1,0 +1,674 @@
+const express = require("express");
+const axios = require("axios");
+const crypto = require("crypto");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+const downloads = new Map();
+
+// ===============================
+// MAIN WEBSITE
+// ===============================
+
+app.get("/", (req, res) => {
+res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ZHEA GIO Downloader</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: #070b12;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 600px;
+    margin: 30px auto;
+}
+
+.logo {
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: #00f5a0;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #8994a5;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: #111a27;
+    border: 1px solid #243448;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 19px;
+}
+
+input, select {
+    width: 100%;
+    padding: 15px;
+    margin-top: 12px;
+    background: #080e18;
+    color: white;
+    border: 1px solid #31435a;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 15px;
+    background: #00e89b;
+    color: #00160d;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.5;
+}
+
+.secondary {
+    background: #26364b;
+    color: white;
+}
+
+.result {
+    display: none;
+    margin-top: 20px;
+}
+
+.cover {
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 10px;
+}
+
+.info {
+    color: #a8b6c8;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.download-item {
+    background: #080e18;
+    padding: 14px;
+    border-radius: 12px;
+    margin-top: 12px;
+    border: 1px solid #26364b;
+}
+
+.download-item a {
+    display: block;
+    text-align: center;
+    padding: 12px;
+    background: #00e89b;
+    color: #00160d;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.status {
+    text-align: center;
+    color: #00e89b;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.quality-label {
+    display: block;
+    margin-top: 20px;
+    color: #c8d4e2;
+}
+
+.footer {
+    text-align: center;
+    color: #65758a;
+    font-size: 12px;
+    margin-top: 30px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="logo">ZHEA GIO</div>
+
+<div class="subtitle">
+TikTok Video Downloader
+</div>
+
+<div class="card">
+
+<h2>Download TikTok Video</h2>
+
+<input
+type="url"
+id="videoUrl"
+placeholder="Paste TikTok video link here..."
+>
+
+<label class="quality-label">
+Select Video Quality
+</label>
+
+<select id="quality">
+
+<option value="720p">720p HD</option>
+
+<option value="1080p" selected>
+1080p Full HD
+</option>
+
+<option value="1280p">1280p</option>
+
+<option value="2k">2K QHD</option>
+
+<option value="4k">4K Ultra HD</option>
+
+</select>
+
+<button id="downloadBtn" onclick="downloadVideo()">
+DOWNLOAD VIDEO
+</button>
+
+<div class="status" id="status"></div>
+
+<div class="result" id="result">
+
+<img class="cover" id="cover">
+
+<h3 id="title"></h3>
+
+<div class="info" id="author"></div>
+
+<button onclick="downloadFile()">
+⬇ DOWNLOAD
+</button>
+
+<button class="secondary" onclick="openVideo()">
+OPEN VIDEO
+</button>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>📥 Download Center</h2>
+
+<div class="info">
+Your downloaded videos
+</div>
+
+<div id="downloadList"></div>
+
+</div>
+
+<div class="footer">
+ZHEA GIO © 2026
+</div>
+
+</div>
+
+<script>
+
+let currentDownload = null;
+
+function loadDownloads() {
+
+    const list = JSON.parse(
+        localStorage.getItem("zheaDownloads") || "[]"
+    );
+
+    const box = document.getElementById("downloadList");
+
+    box.innerHTML = "";
+
+    if (list.length === 0) {
+
+        box.innerHTML =
+        '<p class="info">No downloads yet.</p>';
+
+        return;
+    }
+
+    list.forEach(item => {
+
+        const div = document.createElement("div");
+
+        div.className = "download-item";
+
+        const title = document.createElement("div");
+        title.textContent = item.title;
+
+        const quality = document.createElement("div");
+        quality.className = "info";
+        quality.textContent = item.quality;
+
+        const link = document.createElement("a");
+        link.href = item.url;
+        link.textContent = "DOWNLOAD AGAIN";
+
+        link.setAttribute("download", "");
+
+        div.appendChild(title);
+        div.appendChild(quality);
+        div.appendChild(link);
+
+        box.appendChild(div);
+
+    });
+
+}
+
+async function downloadVideo() {
+
+    const url = document
+        .getElementById("videoUrl")
+        .value.trim();
+
+    const quality = document
+        .getElementById("quality")
+        .value;
+
+    const status = document.getElementById("status");
+
+    const button = document.getElementById("downloadBtn");
+
+    const result = document.getElementById("result");
+
+    if (!url) {
+
+        alert("Please paste TikTok video link!");
+
+        return;
+    }
+
+    if (!/^https?:\\/\\/(www\\.|vm\\.|vt\\.)?tiktok\\.com\\//i.test(url)) {
+
+        alert("Invalid TikTok link!");
+
+        return;
+    }
+
+    button.disabled = true;
+
+    status.textContent = "Processing video...";
+
+    result.style.display = "none";
+
+    try {
+
+        const response = await fetch("/api/download", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                url: url,
+                quality: quality
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(data.error || "Download failed");
+
+        }
+
+        currentDownload = data;
+
+        document.getElementById("cover").src =
+            data.cover || "";
+
+        document.getElementById("title").textContent =
+            data.title || "TikTok Video";
+
+        document.getElementById("author").textContent =
+            "Creator: " + (data.author || "Unknown");
+
+        result.style.display = "block";
+
+        status.textContent =
+            "Video ready! Selected: " + quality;
+
+    } catch (error) {
+
+        status.textContent = error.message;
+
+    }
+
+    button.disabled = false;
+
+}
+
+function downloadFile() {
+
+    if (!currentDownload) return;
+
+    const link = document.createElement("a");
+
+    link.href = currentDownload.downloadUrl;
+
+    link.download = "ZHEA-GIO-VIDEO.mp4";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    saveHistory();
+
+}
+
+function openVideo() {
+
+    if (!currentDownload) return;
+
+    window.location.href =
+        currentDownload.downloadUrl;
+
+    saveHistory();
+
+}
+
+function saveHistory() {
+
+    if (!currentDownload) return;
+
+    let list = JSON.parse(
+        localStorage.getItem("zheaDownloads") || "[]"
+    );
+
+    list.unshift({
+
+        title: currentDownload.title,
+
+        quality: currentDownload.quality,
+
+        url: currentDownload.downloadUrl
+
+    });
+
+    list = list.slice(0, 20);
+
+    localStorage.setItem(
+        "zheaDownloads",
+        JSON.stringify(list)
+    );
+
+    loadDownloads();
+
+}
+
+loadDownloads();
+
+</script>
+
+</body>
+</html>`);
+});
+
+// ===============================
+// TIKTOK API
+// ===============================
+
+app.post("/api/download", async (req, res) => {
+
+    try {
+
+        const { url, quality } = req.body;
+
+        if (!url) {
+
+            return res.status(400).json({
+                error: "TikTok URL required"
+            });
+
+        }
+
+        const response = await axios.post(
+
+            "https://www.tikwm.com/api/",
+
+            new URLSearchParams({
+                url: url,
+                hd: "1"
+            }),
+
+            {
+                headers: {
+                    "Content-Type":
+                    "application/x-www-form-urlencoded",
+
+                    "User-Agent":
+                    "Mozilla/5.0"
+                },
+
+                timeout: 30000
+
+            }
+
+        );
+
+        const data = response.data.data;
+
+        if (
+            response.data.code !== 0 ||
+            !data
+        ) {
+
+            throw new Error("Unable to get TikTok video");
+
+        }
+
+        let videoUrl;
+
+        // Select the best available source.
+        // TikWM does not guarantee exact resolutions.
+
+        if (quality === "720p") {
+
+            videoUrl = data.play || data.hdplay;
+
+        } else {
+
+            videoUrl = data.hdplay || data.play;
+
+        }
+
+        if (!videoUrl) {
+
+            throw new Error("Video URL unavailable");
+
+        }
+
+        const token = crypto.randomBytes(16).toString("hex");
+
+        downloads.set(token, {
+
+            url: videoUrl,
+
+            title: data.title || "TikTok Video",
+
+            created: Date.now()
+
+        });
+
+        res.json({
+
+            success: true,
+
+            title: data.title || "TikTok Video",
+
+            cover: data.cover || "",
+
+            author:
+                data.author?.nickname || "TikTok Creator",
+
+            quality: quality || "1080p",
+
+            downloadUrl: "/api/file/" + token
+
+        });
+
+    } catch (error) {
+
+        console.error(error.message);
+
+        res.status(500).json({
+
+            error: "Cannot process video. Please try again."
+
+        });
+
+    }
+
+});
+
+// ===============================
+// FILE DOWNLOAD
+// ===============================
+
+app.get("/api/file/:token", async (req, res) => {
+
+    try {
+
+        const item = downloads.get(req.params.token);
+
+        if (!item) {
+
+            return res.status(404).send(
+                "Download expired. Please process the video again."
+            );
+
+        }
+
+        // Token expires after 30 minutes.
+
+        if (Date.now() - item.created > 30 * 60 * 1000) {
+
+            downloads.delete(req.params.token);
+
+            return res.status(410).send(
+                "Download link expired."
+            );
+
+        }
+
+        const video = await axios.get(item.url, {
+
+            responseType: "stream",
+
+            timeout: 60000,
+
+            headers: {
+
+                "User-Agent": "Mozilla/5.0"
+
+            }
+
+        });
+
+        res.setHeader(
+
+            "Content-Type",
+
+            video.headers["content-type"] ||
+            "video/mp4"
+
+        );
+
+        res.setHeader(
+
+            "Content-Disposition",
+
+            'attachment; filename="ZHEA-GIO-VIDEO.mp4"'
+
+        );
+
+        video.data.pipe(res);
+
+        video.data.on("error", () => {
+
+            if (!res.headersSent) {
+                res.status(500);
+            }
+
+            res.end();
+
+        });
+
+    } catch (error) {
+
+        console.error(error.message);
+
+        if (!res.headersSent) {
+
+            res.status(500).send(
+                "Video download failed."
+            );
+
+        }
+
+    }
+
+});
+
+// ===============================
+// SERVER
+// ===============================
+
+app.listen(PORT, "0.0.0.0", () => {
+
+    console.log("--------------------------------");
+
+    console.log("ZHEA GIO DOWNLOADER RUNNING");
+
+    console.log("PORT: " + PORT);
+
+    console.log("--------------------------------");
+
+});
