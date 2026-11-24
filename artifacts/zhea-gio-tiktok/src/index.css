@@ -860,7 +860,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .creator-row strong { display: block; color: hsl(var(--foreground)); font-size: 12px; }
 .creator-row span { display: block; margin-top: 2px; font-size: 10px; }
 .result-divider { height: 1px; margin: 17px 0 14px; background: hsl(var(--border)); }
-.result-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: auto; }
+.result-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: auto; }
+.result-actions .action-link, .result-actions .action-button { width: 100%; min-width: 0; white-space: nowrap; }
 .action-link, .action-button {
   min-height: 42px;
   display: inline-flex;
@@ -952,6 +953,10 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .how-section { margin-top: 34px; }
   .site-footer { width: calc(100% - 36px); min-height: 62px; gap: 10px; font-size: 9px; }
   .footer-note { text-align: right; }
+}
+
+@media (max-width: 420px) {
+  .result-actions { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

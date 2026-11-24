@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useDownloadTikTokVideo, useGetDownloaderStatus } from '@workspace/api-client-react';
-import { AlertCircle, ArrowDownToLine, Check, Clipboard, ExternalLink, Link2, Music2, ShieldCheck, Sparkles, Video, Wifi } from 'lucide-react';
+import { AlertCircle, ArrowDownToLine, Clipboard, Link2, Music2, ShieldCheck, Sparkles, Video, Wifi } from 'lucide-react';
 
 type TikTokDownloadResult = {
   success: boolean;
@@ -9,7 +9,7 @@ type TikTokDownloadResult = {
   play: string;
   music: string;
   author: string | { nickname?: string; unique_id?: string; username?: string };
-  fileDownloadUrl: string;
+  sourceUrl: string;
 };
 
 type DownloaderError = {
@@ -17,14 +17,38 @@ type DownloaderError = {
   error: string;
 };
 
-function isTikTokUrl(value: string) {
+function normalizeTikTokUrl(value: string) {
+  const match = value.match(/https?:\/\/(?:www\.|m\.|vm\.|vt\.)?tiktok\.com\/[^\s"'<>]+/i);
+  if (!match) return '';
+
   try {
-    const url = new URL(value);
-    const hosts = ['tiktok.com', 'www.tiktok.com', 'm.tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com'];
-    return url.protocol === 'https:' && hosts.includes(url.hostname.toLowerCase());
+    const candidate = match[0].replace(/[),.;!?]+$/, '');
+    const url = new URL(candidate);
+    const hostname = url.hostname.toLowerCase();
+    const isTikTokHost = hostname === 'tiktok.com' || hostname.endsWith('.tiktok.com');
+    if (!isTikTokHost || !['http:', 'https:'].includes(url.protocol)) return '';
+
+    url.protocol = 'https:';
+    if (hostname === 'm.tiktok.com') url.hostname = 'www.tiktok.com';
+    if (/^(vm|vt)\.tiktok\.com$/.test(hostname) || url.pathname.startsWith('/t/')) {
+      return url.toString();
+    }
+
+    url.search = '';
+    url.hash = '';
+    return `${url.origin}${url.pathname}`;
   } catch {
-    return false;
+    return '';
   }
+}
+
+function getFileDownloadUrl(sourceUrl: string, quality: '2k' | 'standard', format: 'mp4' | 'mp3' = 'mp4') {
+  if (format === 'mp4' && quality === '2k') {
+    return `/api/yt-dlp?${new URLSearchParams({ url: sourceUrl }).toString()}`;
+  }
+
+  const params = new URLSearchParams({ url: sourceUrl, quality, format });
+  return `/api/download?${params.toString()}`;
 }
 
 function getAuthorName(author: TikTokDownloadResult['author']) {
@@ -40,11 +64,10 @@ function getAuthorHandle(author: TikTokDownloadResult['author']) {
 
 export default function Home() {
   const [url, setUrl] = useState('');
-  const [quality, setQuality] = useState<'2k' | '4k' | '8k' | 'standard'>('2k');
+  const [quality, setQuality] = useState<'hd' | '2k' | '4k' | 'standard'>('hd');
   const [fieldError, setFieldError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [result, setResult] = useState<TikTokDownloadResult | null>(null);
-  const [copied, setCopied] = useState(false);
   const statusQuery = useGetDownloaderStatus();
   const downloadVideo = useDownloadTikTokVideo();
 
@@ -69,21 +92,21 @@ export default function Home() {
     const trimmed = url.trim();
     setFieldError('');
     setRequestError('');
-    setCopied(false);
     setResult(null);
 
     if (!trimmed) {
       setFieldError('សូមបិទភ្ជាប់តំណ TikTok ជាមុនសិន។');
       return;
     }
-    if (!isTikTokUrl(trimmed)) {
+    const normalizedUrl = normalizeTikTokUrl(trimmed);
+    if (!normalizedUrl) {
       setFieldError('សូមបញ្ចូលតំណសាធារណៈពី TikTok ដែលត្រឹមត្រូវ។');
       return;
     }
 
     const sourceQuality = quality === 'standard' ? 'standard' : '2k';
     downloadVideo.mutate(
-      { data: { url: trimmed, quality: sourceQuality } },
+      { data: { url: normalizedUrl, quality: sourceQuality } },
       {
         onSuccess: (response) => {
           const payload = response as unknown as TikTokDownloadResult | DownloaderError;
@@ -93,7 +116,7 @@ export default function Home() {
           }
           setResult({
             ...(payload as TikTokDownloadResult),
-            fileDownloadUrl: `/api/download?url=${encodeURIComponent(trimmed)}&quality=${sourceQuality}`,
+            sourceUrl: normalizedUrl,
           });
         },
         onError: (error) => {
@@ -125,17 +148,6 @@ export default function Home() {
       setUrl(value.trim());
     } catch {
       setFieldError('មិនអាចអាន clipboard បានទេ។ សូមបិទភ្ជាប់តំណដោយដៃ។');
-    }
-  }
-
-  async function copyMusic() {
-    if (!result?.music) return;
-    try {
-      await navigator.clipboard.writeText(result.music);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2200);
-    } catch {
-      setRequestError('មិនអាចចម្លងតំណតន្ត្រីបានទេ។ សូមសាកល្បងម្ដងទៀត។');
     }
   }
 
@@ -196,9 +208,9 @@ export default function Home() {
               <span className="quality-label" id="video-quality-label">គុណភាពវីដេអូ MP4</span>
               <div className="quality-options" role="radiogroup" aria-labelledby="video-quality-label" data-testid="quality-options">
                 {([
+                  { value: 'hd', label: 'HD / 1280p' },
                   { value: '2k', label: '2K' },
                   { value: '4k', label: '4K' },
-                  { value: '8k', label: '8K' },
                   { value: 'standard', label: 'ស្តង់ដារ' },
                 ] as const).map((option) => (
                   <label className={`quality-option${quality === option.value ? ' is-selected' : ''}`} key={option.value}>
@@ -215,7 +227,7 @@ export default function Home() {
                   </label>
                 ))}
               </div>
-              <p className="quality-note" id="quality-note">ជ្រើសកម្រិតគោលដៅ 2K/4K/8K។ កម្រិតទាញយកពិតអាស្រ័យលើប្រភព ហើយអាចទាបជាងដែលបានជ្រើស។ កម្មវិធីមិនបង្កើន resolution ទេ។</p>
+              <p className="quality-note" id="quality-note">ជ្រើស HD/1280p, 2K ឬ 4K។ គុណភាពទាញយកពិតអាស្រ័យលើប្រភព ហើយអាចទាបជាងកម្រិតដែលបានជ្រើស។ កម្មវិធីមិនបង្កើន resolution ទេ។</p>
             </div>
             <button className="submit-button" type="submit" disabled={downloadVideo.isPending} data-testid="button-get-video">
               {downloadVideo.isPending ? (
@@ -268,22 +280,26 @@ export default function Home() {
               <div className="result-divider" />
               <div className="result-actions">
                 {result.play ? (
-                  <a className="action-link primary-action" href={result.fileDownloadUrl} download="zhea-gio-tiktok.mp4" data-testid="link-download-video">
-                    <ArrowDownToLine size={15} /> ទាញយកវីដេអូ
+                  <>
+                    <a className="action-link" href={getFileDownloadUrl(result.sourceUrl, 'standard')} download="zhea-gio-tiktok-1.mp4" data-testid="link-download-mp4-1">
+                      <ArrowDownToLine size={15} /> Download MP4 [1]
+                    </a>
+                    <a className="action-link" href={getFileDownloadUrl(result.sourceUrl, '2k')} download="zhea-gio-tiktok-2.mp4" data-testid="link-download-mp4-2">
+                      <ArrowDownToLine size={15} /> Download MP4 [2]
+                    </a>
+                    <a className="action-link primary-action" href={getFileDownloadUrl(result.sourceUrl, '2k')} download="zhea-gio-tiktok-hd.mp4" data-testid="link-download-mp4-hd">
+                      <ArrowDownToLine size={15} /> Download MP4 HD
+                    </a>
+                  </>
+                ) : (
+                  <span className="action-button" aria-disabled="true">No MP4 source</span>
+                )}
+                {result.music ? (
+                  <a className="action-link" href={getFileDownloadUrl(result.sourceUrl, 'standard', 'mp3')} download="zhea-gio-tiktok.mp3" data-testid="link-download-mp3">
+                    <Music2 size={15} /> Download MP3
                   </a>
                 ) : (
-                  <span className="action-button" aria-disabled="true">គ្មានតំណវីដេអូ</span>
-                )}
-                {result.music && (
-                  <a className="action-link" href={result.music} target="_blank" rel="noreferrer" data-testid="link-open-music">
-                    <Music2 size={15} /> បើកតន្ត្រី <ExternalLink size={12} />
-                  </a>
-                )}
-                {result.music && (
-                  <button className="action-button" type="button" onClick={copyMusic} data-testid="button-copy-music">
-                    {copied ? <Check size={14} /> : <Clipboard size={14} />}
-                    {copied ? 'បានចម្លង' : 'ចម្លងតំណតន្ត្រី'}
-                  </button>
+                  <span className="action-button" aria-disabled="true">MP3 unavailable</span>
                 )}
               </div>
             </div>
