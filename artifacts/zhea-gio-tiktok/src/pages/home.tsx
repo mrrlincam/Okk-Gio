@@ -28,6 +28,10 @@ function isTikTokUrl(value: string) {
 }
 
 function getFileDownloadUrl(sourceUrl: string, quality: '2k' | 'standard', format: 'mp4' | 'mp3' = 'mp4') {
+  if (format === 'mp4' && quality === '2k') {
+    return `/api/yt-dlp?${new URLSearchParams({ url: sourceUrl }).toString()}`;
+  }
+
   const params = new URLSearchParams({ url: sourceUrl, quality, format });
   return `/api/download?${params.toString()}`;
 }
