@@ -14,11 +14,19 @@ module.exports = async (req, res) => {
         const input = isFileDownload ? req.query || {} : req.body || {};
         const url = typeof input.url === "string" ? input.url : "";
         const quality = typeof input.quality === "string" ? input.quality : "2k";
+        const format = typeof input.format === "string" ? input.format : "mp4";
 
         if (!['2k', 'standard'].includes(quality)) {
             return res.status(400).json({
                 success: false,
                 error: "Invalid quality option"
+            });
+        }
+
+        if (!['mp4', 'mp3'].includes(format)) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid download format"
             });
         }
 
@@ -69,15 +77,19 @@ module.exports = async (req, res) => {
                 ? data.play || data.hdplay
                 : data.hdplay;
 
-        if (!videoUrl) {
+        const mediaUrl = isFileDownload && format === "mp3" ? data.music : videoUrl;
+
+        if (!mediaUrl) {
             return res.status(422).json({
                 success: false,
-                error: "This video has no higher-quality source stream. Choose standard quality instead."
+                error: format === "mp3"
+                    ? "This video has no downloadable music source."
+                    : "This video has no higher-quality source stream. Choose standard quality instead."
             });
         }
 
         if (isFileDownload) {
-            const videoResponse = await axios.get(videoUrl, {
+            const videoResponse = await axios.get(mediaUrl, {
                 responseType: "stream",
                 timeout: 120000,
                 maxRedirects: 3,
@@ -86,8 +98,11 @@ module.exports = async (req, res) => {
             });
 
             res.status(200);
-            res.setHeader("Content-Type", "video/mp4");
-            res.setHeader("Content-Disposition", 'attachment; filename="zhea-gio-tiktok.mp4"');
+            res.setHeader("Content-Type", format === "mp3" ? "audio/mpeg" : "video/mp4");
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="zhea-gio-tiktok.${format}"`
+            );
             res.setHeader("Cache-Control", "no-store");
             if (videoResponse.headers["content-length"]) {
                 res.setHeader("Content-Length", videoResponse.headers["content-length"]);
